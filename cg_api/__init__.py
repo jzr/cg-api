@@ -3,6 +3,7 @@ from functools import partialmethod
 from typing import Any, Type
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 
 from .configuration import Config, list_profiles
 
@@ -32,13 +33,20 @@ class Session:
     # requests wrapper with authentication and minor handling
 
     def call(self, endpoint: str, data: object = None, method: str = "GET", **kwargs):
-        response = requests.request(
+        session = requests.Session()
+        retries = Retry(total=10,
+                        backoff_factor=0.5,
+                        status_forcelist=[429])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        response = session.request(
             method=method,
             url=f"{self.config.BASE_URL}/{endpoint}",
             json=data,
             auth=(self.config.KEY, self.config.SECRET),
             **kwargs
         )
+
         if response.status_code == 401:
             raise RuntimeError(f"401 Authentication failed: {response.text}")
         if response.status_code == 204:
