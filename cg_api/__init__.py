@@ -31,12 +31,13 @@ class Session:
 
     # requests wrapper with authentication and minor handling
 
-    def call(self, endpoint: str, data: object = None, method: str = "GET"):
+    def call(self, endpoint: str, data: object = None, method: str = "GET", **kwargs):
         response = requests.request(
             method=method,
             url=f"{self.config.BASE_URL}/{endpoint}",
             json=data,
             auth=(self.config.KEY, self.config.SECRET),
+            **kwargs
         )
         if response.status_code == 401:
             raise RuntimeError(f"401 Authentication failed: {response.text}")
