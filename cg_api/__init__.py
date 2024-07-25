@@ -56,7 +56,7 @@ class Session:
             raise RuntimeError(
                 f"Unexpected status code: {response.status_code}, {response.text}"
             )
-        if response.headers.get("Content-Type").startswith("application/json"):
+        if response.headers.get("Content-Type", "").startswith("application/json"):
             return response.json()
         else:
             return response.text
