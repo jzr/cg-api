@@ -34,17 +34,15 @@ class Session:
 
     def call(self, endpoint: str, data: object = None, method: str = "GET", **kwargs):
         session = requests.Session()
-        retries = Retry(total=10,
-                        backoff_factor=0.5,
-                        status_forcelist=[429])
-        session.mount('https://', HTTPAdapter(max_retries=retries))
+        retries = Retry(total=10, backoff_factor=0.5, status_forcelist=[429])
+        session.mount("https://", HTTPAdapter(max_retries=retries))
 
         response = session.request(
             method=method,
             url=f"{self.config.BASE_URL}/{endpoint}",
             json=data,
             auth=(self.config.KEY, self.config.SECRET),
-            **kwargs
+            **kwargs,
         )
 
         if response.status_code == 401:
@@ -56,7 +54,7 @@ class Session:
             raise RuntimeError(
                 f"Unexpected status code: {response.status_code}, {response.text}"
             )
-        if response.headers.get("Content-Type").startswith("application/json"):
+        if response.headers.get("Content-Type", "").startswith("application/json"):
             return response.json()
         else:
             return response.text
