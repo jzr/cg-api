@@ -1,3 +1,5 @@
+import logging
+
 from enum import Enum
 from functools import partialmethod
 from typing import Any, Type
@@ -6,6 +8,8 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from .configuration import Config, list_profiles
+
+logger = logging.getLogger(__package__)
 
 
 class Session:
@@ -32,7 +36,14 @@ class Session:
 
     # requests wrapper with authentication and minor handling
 
-    def call(self, endpoint: str, data: object = None, method: str = "GET", **kwargs):
+    def call(
+        self,
+        endpoint: str,
+        data: object = None,
+        method: str = "GET",
+        raw_response=False,
+        **kwargs,
+    ):
         session = requests.Session()
         retries = Retry(total=10, backoff_factor=0.5, status_forcelist=[429])
         session.mount("https://", HTTPAdapter(max_retries=retries))
@@ -45,6 +56,9 @@ class Session:
             **kwargs,
         )
 
+        logger.debug("response status_code: %s", response.status_code)
+        logger.debug("response headers: %s", response.headers)
+
         if response.status_code == 401:
             raise RuntimeError(f"401 Authentication failed: {response.text}")
         if response.status_code == 204:
@@ -54,7 +68,9 @@ class Session:
             raise RuntimeError(
                 f"Unexpected status code: {response.status_code}, {response.text}"
             )
-        if response.headers.get("Content-Type", "").startswith("application/json"):
+        if raw_response:
+            return response
+        elif response.headers.get("Content-Type", "").startswith("application/json"):
             return response.json()
         else:
             return response.text
